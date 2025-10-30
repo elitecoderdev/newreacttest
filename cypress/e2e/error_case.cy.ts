@@ -6,7 +6,7 @@ describe('error case', () => {
       headers: { 'content-type': 'text/plain' },
     }).as('missing');
 
-    cy.visit('/articles/99999');
+    cy.loginAs(['editor'], '/articles/99999');
     cy.wait('@missing');
     cy.findByText(/not found/i).should('exist');
   });

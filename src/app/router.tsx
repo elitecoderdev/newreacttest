@@ -1,10 +1,32 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { Suspense, lazy } from 'react';
 import AppLayout from '@features/ui/components/AppLayout';
-import ArticlesListPage from '@features/articles/routes/ArticlesListPage';
-import ArticleDetailPage from '@features/articles/routes/ArticleDetailPage';
-import CategoriesPage from '@features/articles/routes/CategoriesPage';
-import NewArticlePage from '@features/articles/routes/NewArticlePage';
-import EditArticlePage from '@features/articles/routes/EditArticlePage';
+import { Protected, RoleGate, GuestOnly } from './route-guards';
+
+const ArticlesListPage = lazy(
+  () => import('@features/articles/routes/ArticlesListPage')
+);
+const CategoriesPage = lazy(
+  () => import('@features/articles/routes/CategoriesPage')
+);
+const ArticleDetailPage = lazy(
+  () => import('@features/articles/routes/ArticleDetailPage')
+);
+const NewArticlePage = lazy(
+  () => import('@features/articles/routes/NewArticlePage')
+);
+const EditArticlePage = lazy(
+  () => import('@features/articles/routes/EditArticlePage')
+);
+const LoginPage = lazy(
+  () => import('@features/auth/routes/LoginPage')
+);
+
+const Fallback = (
+  <div className="container" style={{ paddingTop: 12 }}>
+    <div className="spinner" /> Loading
+  </div>
+);
 
 export const router = createBrowserRouter([
   {
@@ -12,18 +34,68 @@ export const router = createBrowserRouter([
     element: <AppLayout />,
     children: [
       { index: true, element: <Navigate to="/articles" replace /> },
-      { path: 'articles', element: <ArticlesListPage /> },
-      { path: 'articles/categories', element: <CategoriesPage /> },
-      { path: 'articles/new', element: <NewArticlePage /> },
-      { path: 'articles/:id', element: <ArticleDetailPage /> },
-      { path: 'articles/:id/edit', element: <EditArticlePage /> },
       {
-        path: '*',
-        element: (
-          <div className="container">
-            <h2>Not Found</h2>
-          </div>
-        ),
+        element: <GuestOnly />,
+        children: [
+          {
+            path: 'login',
+            element: (
+              <Suspense fallback={Fallback}>
+                <LoginPage />
+              </Suspense>
+            ),
+          },
+        ],
+      },
+      {
+        element: <Protected />,
+        children: [
+          {
+            path: 'articles',
+            element: (
+              <Suspense fallback={Fallback}>
+                <ArticlesListPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: 'articles/categories',
+            element: (
+              <Suspense fallback={Fallback}>
+                <CategoriesPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: 'articles/:id',
+            element: (
+              <Suspense fallback={Fallback}>
+                <ArticleDetailPage />
+              </Suspense>
+            ),
+          },
+          {
+            element: <RoleGate roles={['editor', 'admin']} />,
+            children: [
+              {
+                path: 'articles/new',
+                element: (
+                  <Suspense fallback={Fallback}>
+                    <NewArticlePage />
+                  </Suspense>
+                ),
+              },
+              {
+                path: 'articles/:id/edit',
+                element: (
+                  <Suspense fallback={Fallback}>
+                    <EditArticlePage />
+                  </Suspense>
+                ),
+              },
+            ],
+          },
+        ],
       },
     ],
   },

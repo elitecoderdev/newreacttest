@@ -2,6 +2,7 @@ import { http, HttpResponse } from 'msw';
 import { articlesSeed, categoriesSeed } from './seed';
 import { Article } from '@domain/articles/types';
 import { ArticleInput } from '@domain/articles/validators';
+import { User } from '@domain/auth/types';
 
 let articles = [...articlesSeed];
 
@@ -12,6 +13,8 @@ function paginate<T>(arr: T[], page: number, size: number) {
   const data = arr.slice(start, start + size);
   return { data, page, totalPages, total };
 }
+
+let currentUser: User | null = null;
 
 export const handlers = [
   http.get('/api/categories', () => {
@@ -105,5 +108,23 @@ export const handlers = [
     const updated = { ...articles[idx], rating };
     articles[idx] = updated;
     return HttpResponse.json(updated);
+  }),
+
+  http.post('/api/login', async ({ request }) => {
+    const { email } = (await request.json()) as {
+      email: string;
+      password: string;
+    };
+    const roles = email.includes('admin')
+      ? ['admin', 'editor']
+      : ['editor'];
+    const user: User = { id: 'u1', email, name: 'Test User', roles };
+    currentUser = user;
+    return HttpResponse.json({ token: 'mock-token', user });
+  }),
+  http.get('/api/me', () => {
+    if (!currentUser)
+      return new HttpResponse('Unauthorized', { status: 401 });
+    return HttpResponse.json(currentUser);
   }),
 ];

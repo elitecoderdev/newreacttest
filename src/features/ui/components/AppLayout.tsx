@@ -3,35 +3,50 @@ import {
   Outlet,
   useNavigate,
   useSearchParams,
+  useLocation,
 } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import { RootState } from '@app/store';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Input from '@shared/ui/Input';
-import { useEffect, useState } from 'react';
+import { useUI } from '@app/contexts/ui';
+import { useAuth } from '@app/contexts/auth';
+
+function useDebounced<T>(value: T, delay = 350) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
+}
 
 export default function AppLayout() {
-  const loading = useSelector((s: RootState) => s.ui.globalLoading);
+  const { globalLoading } = useUI();
+  const { user, hasRole, logout } = useAuth();
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
+  const loc = useLocation();
+  const isLoginPage = loc.pathname.startsWith('/login');
+
   const urlQ = params.get('q') || '';
   const [q, setQ] = useState(urlQ);
+  const qDebounced = useDebounced(q, 350);
 
   useEffect(() => {
     setQ(urlQ);
   }, [urlQ]);
 
+  const prevAppliedQ = useRef(urlQ);
   useEffect(() => {
-    const t = setTimeout(() => {
-      setParams((prev) => {
-        const p = new URLSearchParams(prev);
-        if (q) p.set('q', q);
-        else p.delete('q');
-        p.set('page', '1');
-        return p;
-      });
-    }, 350);
-    return () => clearTimeout(t);
-  }, [q, setParams]);
+    if (qDebounced === prevAppliedQ.current) return;
+    setParams((prev) => {
+      const p = new URLSearchParams(prev);
+      if (qDebounced) p.set('q', qDebounced);
+      else p.delete('q');
+      p.set('page', '1');
+      return p;
+    });
+    prevAppliedQ.current = qDebounced;
+  }, [qDebounced, setParams]);
 
   return (
     <div>
@@ -45,24 +60,33 @@ export default function AppLayout() {
               Categories
             </NavLink>
           </nav>
-          <div className="search">
-            <Input
-              placeholder="Search"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-            />
-            <button onClick={() => navigate('/articles/new')}>
-              New
-            </button>
-            {loading ? (
-              <div aria-live="polite">
-                <div
-                  className="spinner"
-                  style={{ width: 16, height: 16 }}
-                />
-              </div>
-            ) : null}
-          </div>
+
+          {!isLoginPage && (
+            <div className="search">
+              <Input
+                placeholder="Search"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+              />
+              {user && hasRole(['editor', 'admin']) && (
+                <button onClick={() => navigate('/articles/new')}>
+                  New
+                </button>
+              )}
+              {user ? (
+                <button onClick={logout}>Logout</button>
+              ) : (
+                <button onClick={() => navigate('/login')}>
+                  Login
+                </button>
+              )}
+              {globalLoading ? (
+                <div aria-live="polite">
+                  <div className="spinner" />
+                </div>
+              ) : null}
+            </div>
+          )}
         </div>
       </header>
       <main>

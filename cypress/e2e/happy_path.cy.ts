@@ -1,5 +1,6 @@
 describe('happy path', () => {
   it('creates and rates an article', () => {
+    cy.loginAs(['admin', 'editor']);
     cy.intercept('GET', '**/api/categories', [
       {
         id: 'technology',

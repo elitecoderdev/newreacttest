@@ -1,14 +1,12 @@
 import { Link } from 'react-router-dom';
 import { Article } from '@domain/articles/types';
 import Badge from '@shared/ui/Badge';
-import { useDispatch, useSelector } from 'react-redux';
-import { toggle } from '@features/articles/state/favoritesSlice';
-import { RootState } from '@app/store';
+import { useFavorites } from '@app/contexts/favorites';
 
 export default function ArticleCard({ a }: { a: Article }) {
-  const ids = useSelector((s: RootState) => s.favorites.ids);
-  const dispatch = useDispatch();
-  const fav = ids.includes(a.id);
+  const { isFavorite, toggle } = useFavorites();
+  const fav = isFavorite(a.id);
+
   return (
     <div className="card">
       <div
@@ -20,7 +18,7 @@ export default function ArticleCard({ a }: { a: Article }) {
             {a.title}
           </Link>
         </h3>
-        <button onClick={() => dispatch(toggle(a.id))}>
+        <button onClick={() => toggle(a.id)}>
           {fav ? 'Unfavorite' : 'Favorite'}
         </button>
       </div>

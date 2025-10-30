@@ -5,17 +5,21 @@ export default function Button(
     variant?: 'primary' | 'ghost' | 'danger';
   }
 ) {
-  const { className, variant = 'primary', ...rest } = props;
-  const v =
+  const { className, variant = 'primary', style, ...rest } = props;
+  const variantStyle =
     variant === 'primary'
-      ? 'background: var(--brand); color: white;'
+      ? { background: 'var(--brand)', color: 'white' }
       : variant === 'danger'
-      ? 'background: var(--danger); color: white;'
-      : 'background: #0e1220; color: var(--text); border: 1px solid var(--border);';
+      ? { background: 'var(--danger)', color: 'white' }
+      : {
+          background: '#0e1220',
+          color: 'var(--text)',
+          border: '1px solid var(--border)',
+        };
   return (
     <button
-      style={{}}
       className={clsx(className)}
+      style={{ ...variantStyle, ...style }}
       {...rest}
       data-variant={variant}
     />

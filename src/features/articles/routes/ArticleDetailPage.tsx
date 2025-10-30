@@ -1,24 +1,24 @@
 import { useParams } from 'react-router-dom';
 import { useGetArticle, useRateArticle } from '../hooks/useArticles';
 import Rating from '@shared/ui/Rating';
-import { useDispatch, useSelector } from 'react-redux';
-import { toggle } from '@features/articles/state/favoritesSlice';
-import { RootState } from '@app/store';
+import { useFavorites } from '@app/contexts/favorites';
 
 export default function ArticleDetailPage() {
   const { id = '' } = useParams();
   const { data, isError } = useGetArticle(id);
   const rate = useRateArticle(id);
-  const dispatch = useDispatch();
-  const ids = useSelector((s: RootState) => s.favorites.ids);
+  const { isFavorite, toggle } = useFavorites();
+
   if (isError)
     return (
       <div className="container">
         <h2>Not found</h2>
       </div>
     );
+
   if (!data) return <div className="container">Loading...</div>;
-  const fav = ids.includes(data.id);
+
+  const fav = isFavorite(data.id);
   return (
     <div className="container" style={{ paddingTop: 24 }}>
       <div
@@ -26,7 +26,7 @@ export default function ArticleDetailPage() {
         style={{ justifyContent: 'space-between' }}
       >
         <h2 className="h">{data.title}</h2>
-        <button onClick={() => dispatch(toggle(data.id))}>
+        <button onClick={() => toggle(data.id)}>
           {fav ? 'Unfavorite' : 'Favorite'}
         </button>
       </div>

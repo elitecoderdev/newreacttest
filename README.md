@@ -25,6 +25,48 @@ Redux holds theme, global loading, and favorites persisted to localStorage. Reac
 /articles/new create
 /articles/:id/edit edit
 
+## Authentication / Login
+
+### Manual login (dev)
+
+1. Visit `/login`.
+2. Use **any** email/password. Roles are derived from the email:
+
+   * If the email **contains `admin`**, roles = `['admin', 'editor']` (can create/edit).
+   * Otherwise, roles = `['editor']`.
+3. After login you’ll be redirected back (or to `/articles`).
+
+**Persistence:** Auth state is stored in `localStorage` under the key `auth:v1` (token + user). Use the **Logout** button in the header (or clear localStorage) to sign out.
+
+**Access control:**
+
+* All `/articles/*` routes require login.
+* `/articles/new` and `/articles/:id/edit` require `editor` or `admin` role.
+
+### Cypress login helper
+
+A custom command seeds auth before the app boots (no `/api/me` call needed):
+
+```ts
+// cypress/support/commands.ts
+Cypress.Commands.add('loginAs', (roles = ['editor'], path = '/') => {
+  const user = { id: 'u1', email: 'tester@example.com', name: 'Test User', roles };
+  const state = { token: 'mock-token', user };
+  cy.visit(path, {
+    onBeforeLoad(win) {
+      win.localStorage.setItem('auth:v1', JSON.stringify(state));
+    },
+  });
+});
+```
+
+**Usage in tests:**
+
+```ts
+cy.loginAs(['admin', 'editor'], '/articles/new'); // admin+editor
+cy.loginAs(['editor']);                           // editor only
+```
+
 ## Error Handling
 
 Global loading derives from React Query active fetch count. Error views for not-found and failed requests. MSW simulates the API and supports filtering, pagination, and mutations.
